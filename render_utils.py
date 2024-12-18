@@ -1234,7 +1234,7 @@ def buildMainNodeTree(scene_outdir, save_thumbnails=False, exr_path=None):
 
             env_texture_node.image = bpy.data.images.load(exr_path)
             world.node_tree.links.new(env_texture_node.outputs["Color"], background_node.inputs["Color"])
-            background_node.inputs["Strength"].default_value = 0.1
+            background_node.inputs["Strength"].default_value = 1.0
 
             # display bg
             bpy.context.scene.render.film_transparent = False 
