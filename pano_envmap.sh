@@ -21,7 +21,7 @@ parent_dir=/root/blender_util
 python_path1=pano_envmap.py
 
 
-final_parent_path=/data2/my_ris_v2
+final_parent_path=/data2/my_ris_v3
 
 # 检查文件是否存在
 if [ -f "$txt_file" ]; then
