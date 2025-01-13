@@ -216,6 +216,7 @@ cam = bpy.data.cameras.new("NewCamera")
 cam_obj = bpy.data.objects.new("NewCamera", cam)
 
 cam.type = "PANO"
+cam.lens = 24.0
 scene.collection.objects.link(cam_obj)
 scene.camera = cam_obj
 scene.cycles.samples = 512
@@ -293,7 +294,10 @@ for render_indice in range(RENDER_NUM+1):
 
 
     cam_obj.location = (cam_x, cam_y, target_height)
-    cam_obj.rotation_euler = (1.3467,0,-1.57079632)
+    # cam_obj.location = (-0.4295, -0.2300, 1.6764)
+    # cam_obj.rotation_euler = (1.3467,0,-1.57079632)
+    cam_obj.rotation_euler = (math.pi/2.0,0,-2.0/3.0 * math.pi)
+
     # cam_obj.rotation_euler = (0,0,0)
 
     # 获取当前场景中的相机
