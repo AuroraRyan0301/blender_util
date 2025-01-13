@@ -93,7 +93,7 @@ def get_light_lists():
     lights = [obj for obj in bpy.context.scene.objects if obj.type == 'LIGHT']
     return lights
 
-def get_a_close_pos_around_lights():
+def get_a_close_pos_around_lights(room_center):
     lights = get_light_lists()
     
     if not lights:
@@ -110,21 +110,26 @@ def get_a_close_pos_around_lights():
         # 计算 BVH 半径
         bvh_size = max(mathutils.Vector(light_bound_box[0]) - mathutils.Vector(light_bound_box[6]))
         bvh_radius =  bvh_size  / 2
-        
-        distance = random.uniform(bvh_radius+0.1, bvh_radius + 0.3)
 
-        # 随机生成一个方向
-        phi = random.uniform(0, 2 * math.pi)
-        theta = random.uniform(0, math.pi)
+        direction_vector = mathutils.Vector(room_center) - light_center
+        direction_vector.z = 0.0
+        direction_vector.normalize()  # Make sure the vector is normalized to unit length
+
+        random_angle = random.uniform(-math.radians(45), math.radians(45))
         
-        # 计算相机的位置
-        x = distance * math.sin(theta) * math.cos(phi)
-        y = distance * math.sin(theta) * math.sin(phi)
-        z = distance * math.cos(theta)
+        # 旋转方向向量：绕z轴旋转random_angle
+        rotation_matrix = mathutils.Matrix.Rotation(random_angle, 4, 'Z')
+        perturbed_direction_vector = rotation_matrix @ direction_vector
+        perturbed_direction_vector.normalize()
         
-        new_loc_x = light_center.x + x
-        new_loc_y = light_center.y + y
-        new_loc_z = light_center.z + z
+        distance = random.uniform(bvh_radius+0.6, bvh_radius + 1.0)
+
+        x_offset = perturbed_direction_vector.x * distance
+        y_offset = perturbed_direction_vector.y * distance
+        
+        new_loc_x = light_center.x + x_offset
+        new_loc_y = light_center.y + y_offset
+        new_loc_z = light_center.z
         return new_loc_x , new_loc_y , new_loc_z
         
     
@@ -222,12 +227,60 @@ cam.cycles.panorama_type = "EQUIRECTANGULAR"
 
 scene.render.image_settings.file_format = FORMAT
 
+# get all exr files in dir
+folder_path = "/root/blender_util/envmaps"
+exr_files = [f for f in os.listdir(folder_path) if f.endswith('.exr')]
+if not exr_files:
+    print(f'[Error] No EXR files found in the folder: {folder_path}')
+
+# random choose
+selected_exr = random.choice(exr_files)
+exr_path = os.path.join(folder_path, selected_exr)
+
+with open(fp + "/texture_exr.txt", 'w') as file:
+    file.write(f"{selected_exr}\n")
+
+if exr_path:
+    world = bpy.context.scene.world
+    if not world:
+        world = bpy.data.worlds.new("MyWorld")
+        bpy.context.scene.world = world
+
+    world.use_nodes = True
+
+    world_nodes = world.node_tree.nodes
+
+    # get bg node
+    background_node = world_nodes.get("Background")
+    if not background_node:
+        background_node = world_nodes.new(type="ShaderNodeBackground")
+
+    original_envmap = False
+    for node in world_nodes:
+        if node.type == 'TEX_IMAGE':
+            original_envmap = True
+
+    if original_envmap == False:
+
+        # create envmap node
+        env_texture_node = world_nodes.new(type="ShaderNodeTexEnvironment")
+
+        env_texture_node.image = bpy.data.images.load(exr_path)
+        world.node_tree.links.new(env_texture_node.outputs["Color"], background_node.inputs["Color"])
+        background_node.inputs["Strength"].default_value = 1.0
+
+        # display bg
+        bpy.context.scene.render.film_transparent = False 
+
+        print("Blender has created shaping tree and new envmap")
+
 for render_indice in range(RENDER_NUM+1):
     depth_file_output.file_slots[0].path = "depth_{}".format(render_indice)
     if render_indice == 0:
         cam_x, cam_y, target_height = get_cam_loc_from_light_sources()
+        room_center = (cam_x*1.0, cam_y*1.0, target_height*1.0)
     else:
-        cam_x, cam_y, _ = get_a_close_pos_around_lights()
+        cam_x, cam_y, _ = get_a_close_pos_around_lights(room_center)
     # collision_judge = True
     # while collision_judge == True:
     #     collision_judge=set_camera_position(cam_obj, cam_x, cam_y, target_height-1.0)
