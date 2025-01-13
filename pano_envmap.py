@@ -111,7 +111,7 @@ def get_a_close_pos_around_lights():
         bvh_size = max(mathutils.Vector(light_bound_box[0]) - mathutils.Vector(light_bound_box[6]))
         bvh_radius =  bvh_size  / 2
         
-        distance = random.uniform(bvh_radius, bvh_radius + 2.0)
+        distance = random.uniform(bvh_radius+0.1, bvh_radius + 0.3)
 
         # 随机生成一个方向
         phi = random.uniform(0, 2 * math.pi)
@@ -227,7 +227,7 @@ for render_indice in range(RENDER_NUM+1):
     if render_indice == 0:
         cam_x, cam_y, target_height = get_cam_loc_from_light_sources()
     else:
-        cam_x, cam_y, target_height = get_a_close_pos_around_lights()
+        cam_x, cam_y, _ = get_a_close_pos_around_lights()
     # collision_judge = True
     # while collision_judge == True:
     #     collision_judge=set_camera_position(cam_obj, cam_x, cam_y, target_height-1.0)
